@@ -1,33 +1,39 @@
 #! /usr/bin/python
 import argparse
-import re
+
+import ynab_csv
 
 
 def main(csv_file, threshold=500.0):
-    with open(csv_file, 'r') as handle:
-        lines = handle.read().splitlines()
+    ynab_file = ynab_csv.YnabCsvFile(csv_file)
+    payees_to_skip = [
+        'Iron Bridge',
+        'Denise Le Cren',
+        'Direct Fx',
+        'IRD',
+        'ACC',
+        'GST',
+        'Immigration',
+        'AA',
+        'Flight Centre',
+        'Weta Digital',
+        'Commonsense Organics Wages',
+        'Starting Balance',
+    ]
 
-    columns = lines[0].split(',')
-    amount_column = columns.index('"Outflow"')
-    payee_column = columns.index('"Payee"')
-    payees_to_skip = ['Transfer : GST', 'Transfer : ANZ Credit', 'Iron Bridge', 'Denise Le Cren']
-
-    for i, line in enumerate(lines[1:]):
-        try:
-            split = eval(line.replace('$', ''))
-            # split = line.split(',')
-            # amount = float(split[amount_column].replace('$', ''))
-            amount = float(split[amount_column])
-            if amount < threshold:
-                continue
-
-            payee = split[payee_column]
-            if payee in payees_to_skip:
-                continue
-            print '%04d  %s' % (i, line)
-        except:
-            print 'error on line %s: %s' % (i+1, line)
-            raise
+    for item in ynab_file.items:
+        if item.payee in payees_to_skip:
+            continue
+        if item.payee.startswith('Transfer'):
+            continue
+        if item.outflow > threshold:
+            print '{item.date} : {item.account} : {item.payee} : -${item.outflow} : {item.memo}'.format(
+                item=item
+            )
+        elif item.inflow > threshold:
+            print '{item.date} : {item.account} : {item.payee} : +${item.inflow} : {item.memo}'.format(
+                item=item
+            )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

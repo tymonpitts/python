@@ -1,8 +1,7 @@
 #!/usr/bin/python
 """
 YNAB exports ALL my data for ALL of my accounts but I only need a certain
-date range when GST time comes around and only real accounts (i.e. not the GST
-budget account).  The specified date range is inclusive.
+date range when GST time comes around.  The specified date range is inclusive.
 """
 import argparse
 import datetime
@@ -26,7 +25,7 @@ def main(csv_file, output_file, from_date, to_date):
     ynab_file = ynab_csv.YnabCsvFile(csv_file)
     output_lines = [ynab_file.lines[0]]
     for item in ynab_file.items:
-        if item.account == 'GST':
+        if item.account == 'Pre-Goals GST':
             continue
 
         if from_date <= item.date <= to_date:
