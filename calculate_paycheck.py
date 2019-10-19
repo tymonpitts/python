@@ -1,7 +1,7 @@
 #! /usr/bin/python
 import sys
 
-rate = 77.0
+rate = 83.0
 withholding_rate = 0.27
 gst_rate = 0.15
 hours = float(sys.argv[1])

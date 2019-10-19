@@ -2,18 +2,19 @@
 import argparse
 def main(opening_balance, csv_file, gst=False):
     with open(csv_file, 'r') as handle:
-        lines = handle.readlines()
+        lines = handle.read().splitlines()
     balance = opening_balance
     balances = [balance]
     interest_earned = 0.0
     tax_withheld = 0.0
-    for i, line in enumerate(reversed(lines)):
+    for i, line in enumerate(lines):
         try:
             split = line.split(',')
             date = split[6]
             amount = float(split[5])
             balance += amount
             balances.append((balance, date))
+            print('{} : {} : {}'.format(date, amount, balance))
             if gst:
                 name = split[0]
                 if name == 'Credit Interest Paid':

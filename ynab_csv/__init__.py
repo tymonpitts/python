@@ -50,16 +50,16 @@ class YnabCsvFile(object):
             raise Exception('Unexpected columns: %s != %s' % (self.columns, expected_colums))
 
         self.line_pattern = re.compile(
-            r'"(?P<account>[^"]*)",'
-            r'"(?P<flag>[^"]*)",'
-            r'"(?P<date>[^"]*)",'
-            r'"(?P<payee>[^"]*)",'
-            r'"(?P<full_category>[^"]*)",'
-            r'"(?P<category_group>[^"]*)",'
-            r'"(?P<category>[^"]*)",'
-            r'"(?P<memo>[^"]*)",'
-            r'\$(?P<outflow>[^,]*),'
-            r'\$(?P<inflow>[^,]*),'
+            r'"(?P<account>.+)",'
+            r'"(?P<flag>.*)",'
+            r'"(?P<date>.+)",'
+            r'"(?P<payee>.*)",'
+            r'"(?P<full_category>.*)",'
+            r'"(?P<category_group>.*)",'
+            r'"(?P<category>.*)",'
+            r'"(?P<memo>.*)",'
+            r'\$(?P<outflow>[0-9.]+),'
+            r'\$(?P<inflow>[0-9.]+),'
             r'"(?P<cleared>(Cleared|Uncleared))"'
         )
 
