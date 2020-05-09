@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+import argparse
+import inspect
+
+
+class Info(object):
+    def __init__(self, rate, withholding_rate, hours):
+        self.rate = rate
+        self.withholding_rate = withholding_rate
+        self.hours = hours
+        self.base_pay = self.rate * self.hours
+        self.gst = self.base_pay * 0.15
+        self.withholding = self.base_pay * self.withholding_rate
+        self.actual_pay_no_gst = self.base_pay - self.withholding
+        self.actual_pay = self.actual_pay_no_gst + self.gst
+        self.withholding_percent = self.withholding_rate * 100.0
+
+
+def main(rate, withholding_rate, hours, diff_rate=None, diff_withholding_rate=None, diff_hours=None):
+    info = Info(rate, withholding_rate, hours)
+
+    if diff_rate or diff_hours or diff_withholding_rate:
+        other_info = Info(diff_rate or rate, diff_withholding_rate or withholding_rate, diff_hours or hours)
+
+        diff_base_pay = other_info.base_pay - info.base_pay
+        diff_gst = other_info.gst - info.gst
+        diff_withholding = other_info.withholding - info.withholding
+        diff_actual_pay_no_gst = other_info.actual_pay_no_gst - info.actual_pay_no_gst
+        diff_actual_pay = other_info.actual_pay - info.actual_pay
+
+        print(inspect.cleandoc('''
+        Base Pay:            {info.base_pay:>9,.2f} : {diff_base_pay:+,.2f}
+        GST:                 {info.gst:>9,.2f} : {diff_gst:+,.2f}
+        Withholding:         {info.withholding:>9,.2f} : {diff_withholding:+,.2f}
+        -------------------------------------
+        Actual Pay:          {info.actual_pay:>9,.2f} : {diff_actual_pay:+,.2f}
+        Actual Pay (No GST): {info.actual_pay_no_gst:>9,.2f} : {diff_actual_pay_no_gst:+,.2f}
+        ''').format(**locals()))
+    else:
+        print(inspect.cleandoc('''
+        Base Pay:            {base_pay:>9,.2f}
+        GST:                 {gst:>9,.2f}
+        Withholding ({withholding_percent:.0f}%):   {withholding:>9,.2f}
+        Actual Pay:          {actual_pay:>9,.2f}
+        Actual Pay (No GST): {actual_pay_no_gst:>9,.2f}
+        ''').format(**info.__dict__))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+        '--rate',
+        required=True,
+        type=float,
+        default=argparse.SUPPRESS,  # so the default doesn't show up in the help text
+        help='hourly rate'
+    )
+    parser.add_argument(
+        '--withholding',
+        dest='withholding_rate',
+        type=float,
+        default=0.27,
+        help='percentage of paycheck to withhold for income tax. Values should be 0-1 floats (e.g. 0.25 = 25%%)'
+    )
+    parser.add_argument(
+        '--hours',
+        type=float,
+        default=50.0,
+        help='how many hours do you work in a week?'
+    )
+    parser.add_argument(
+        '--diff_rate',
+        type=float,
+        default=argparse.SUPPRESS,  # so the default doesn't show up in the help text
+        help='Show the difference between --rate and this hourly rate (default: same as --rate)'
+    )
+    parser.add_argument(
+        '--diff_withholding_rate',
+        type=float,
+        default=argparse.SUPPRESS,  # so the default doesn't show up in the help text
+        help='Show the difference between --withholding and this withholding rate (default: same as --withholding)'
+    )
+    parser.add_argument(
+        '--diff_hours',
+        type=float,
+        default=argparse.SUPPRESS,  # so the default doesn't show up in the help text
+        help='Show the difference between --hours and this amount of hours in a week (default: same as --hours)'
+    )
+    main(**parser.parse_args().__dict__)
