@@ -1,84 +1,70 @@
 #!/usr/bin/python
 """
-Parse YNAB csv file and do the following:
-- filter by date range
-- print largest balance for ANZ Checking account
+Parse the latest YNAB export in the Downloads folder from this year and print
+information about highest balance, interest earned, and tax withheld for each
+account for the previous tax year.
 """
 import argparse
 import datetime
+import glob
+import locale
 import os
 
 import ynab_csv
 
 
-def get_date(s, format='%d/%m/%Y'):
-    return datetime.datetime.strptime(s, format).date()
-
-
-def main(csv_file, output_file, from_date, to_date, threshold):
-    """
-    Args:
-        csv_file (str):
-        output_file (str):
-        from_date (datetime.date):
-        to_date (datetime.date):
-        threshold (float):
-    """
+# TODO: highest balance may not be correct if the transactions within a single
+#       day are out of order. Not sure how to solve this one...
+def main():
+    locale.setlocale(locale.LC_MONETARY, 'en_US.UTF-8')
+    current_year = datetime.datetime.now().year
+    tax_year = current_year - 1
+    csv_file = glob.glob(os.path.expanduser('~/Downloads/YNAB Export - NZ Budget as of {}*/* - Register.csv'.format(current_year)))[-1]
     ynab_file = ynab_csv.YnabCsvFile(csv_file)
-    output_lines = [ynab_file.lines[0]]
-    payees_to_skip = [
-        'Transfer : GST',
-        'Transfer : ANZ Credit',
-        'Transfer : ANZ Checking',
-        'Iron Bridge',
-        'Denise Le Cren',
-        'Weta Digital',
-    ]
-    large_outflows = []  # type: list[ynab_csv.Item]
-    large_inflows = []  # type: list[ynab_csv.Item]
-    for item in ynab_file.items:
-        if item.account == 'GST':
+    balances = {}
+    starting_balances = {}
+    highest_balance_dates = {}
+    highest_balances = {}
+    interest_earned = {}
+    tax_withheld = {}
+    for item in reversed(ynab_file.items):
+        if item.date.year < tax_year:
+            starting_balances.setdefault(item.account, 0.0)
+            starting_balances[item.account] -= item.outflow
+            starting_balances[item.account] += item.inflow
+            balances.setdefault(item.account, 0.0)
+            balances[item.account] -= item.outflow
+            balances[item.account] += item.inflow
+        elif item.date.year == tax_year:
+            highest_balances.setdefault(item.account, 0.0)
+            interest_earned.setdefault(item.account, 0.0)
+            tax_withheld.setdefault(item.account, 0.0)
+            balances[item.account] -= item.outflow
+            balances[item.account] += item.inflow
+            if highest_balances[item.account] < balances[item.account]:
+                highest_balances[item.account] = balances[item.account]
+                highest_balance_dates[item.account] = item.date
+            if item.payee == 'Credit Interest Paid':
+                interest_earned[item.account] += item.inflow
+            if item.payee == 'Withholding Tax':
+                tax_withheld[item.account] += item.outflow
+        else:
+            break
+    for account in sorted(starting_balances):
+        if not highest_balances.get(account, 0.0) or 'credit' in account.lower():
             continue
-
-        if not from_date <= item.date <= to_date:
-            continue
-
-        output_lines.append(item.line)
-
-        if item.payee in payees_to_skip:
-            continue
-
-        if item.outflow > threshold:
-            large_outflows.append(item)
-        elif item.inflow > threshold:
-            large_inflows.append(item)
-
-    with open(os.path.abspath(os.path.expanduser(output_file)), 'w') as handle:
-        handle.write('\n'.join(output_lines))
-
-    if large_outflows:
-        print 'Large Purchases:'
-        for item in large_outflows:
-            print '  %04d  %s' % (item.line_number, item.line)
-    else:
-        print 'No Large Purchases'
-
-    if large_inflows:
-        print
-        print 'Large Sales:'
-        for item in large_inflows:
-            print '  %04d  %s' % (item.line_number, item.line)
-    else:
-        print 'No Large Sales'
+        print(account)
+        print('  Account Number: ')
+        print('  Highest Balance: {}'.format(locale.currency(highest_balances[account], grouping=True)))
+        print('  Highest Balance Date: {}'.format(highest_balance_dates[account]))
+        if interest_earned[account]:
+            print('  Total Interest Earned: {}'.format(locale.currency(interest_earned[account], grouping=True)))
+        if tax_withheld[account]:
+            print('  Total Tax Withheld: {}'.format(locale.currency(tax_withheld[account], grouping=True)))
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('csv_file')
-    parser.add_argument('output_file')
-    parser.add_argument('from_date', type=get_date)
-    parser.add_argument('to_date', type=get_date)
-    parser.add_argument('--threshold', type=float, default=500.0)
     args = parser.parse_args()
     main(**args.__dict__)
 
