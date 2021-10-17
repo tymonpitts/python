@@ -70,7 +70,7 @@ def main(register, threshold):
 
     # output the filtered transactions to a .csv file named
     # after the GST period's end date
-    output_file = '~/Downloads/transactions_for_gst_period_ending_{}.csv'.format(to_date.strftime('%Y-%m-%d'))
+    output_file = '~/Downloads/categorized_transactions_for_gst_period_ending_{}.csv'.format(to_date.strftime('%Y-%m-%d'))
     output_file = os.path.abspath(os.path.expanduser(output_file))
     print 'Outputting filtered transactions: {}'.format(output_file)
     with open(output_file, 'w') as handle:
