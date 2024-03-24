@@ -20,7 +20,8 @@ def main(argv=None):
         return
 
     transaction_files.sort(key=lambda f: f.stat().st_mtime)
-    transaction_file = transaction_files[0]
+    print("\n".join([str(f) for f in transaction_files]))
+    transaction_file = transaction_files[-1]
     original_file = downloads_dir / (transaction_file.name.replace(".ofx", "") + ".original.ofx")
     if original_file.exists():
         with original_file.open("r") as f:
@@ -36,6 +37,7 @@ def main(argv=None):
     )
     with transaction_file.open("w") as f:
         f.write(new_contents)
+    print(f"Updated {transaction_file}")
 
 
 if __name__ == "__main__":
